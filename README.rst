@@ -71,5 +71,18 @@ To manage snapshots:
     $ vmwarecli vm --ip <VM_IP> delete_snapshot <SNAPNAME>
     $ vmwarecli vm --ip <VM_IP> delete_all_snapshots
 
+To list datastores on a host:
+::
+
+    $ vmwarecli host --ip <ESX_IP> list_datastores
+
+To create NFS datastore::
+
+    $ vmwarecli host --ip <HOST_IP> create_nas_datastore --name <DSNAME> --nashost <NAS_SERVER> --share <SHARE_NAME> --dstype nfs
+
+To delete a datastore::
+
+    $ vmwarecli host --ip <HOST_IP> delete_datastore <DSNAME>
+
 There are various other commands available with the library and they
 will be documented later.

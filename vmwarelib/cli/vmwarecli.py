@@ -39,20 +39,20 @@ class MyCLI(click.MultiCommand):
 
 @click.command(cls=MyCLI)
 @click.version_option('0.42')
-@click.option('--host', envvar="VMWARECLI_HOST", help='vSphere server or ESX. ')
+@click.option('--server', envvar="VMWARECLI_SERVER", help='vSphere server or ESX. ')
 @click.option('--username', envvar="VMWARECLI_USERNAME", help='User name.')
 @click.option('--password', envvar="VMWARECLI_PASSWORD", help='Password.')
 @click.option('-k', is_flag=True, help='When set, certificate warnings are ignored. ')
 @util.pass_context
-def cli(ctx, host, username, password, k=False):
+def cli(ctx, server, username, password, k=False):
     """vmwarecli is a command line tool for vSphere.
     """
 
-    if not host or not username or not password:
-        raise Exception("host, user name, and password are required. ")
+    if not server or not username or not password:
+        raise Exception("server, user name, and password are required. ")
 
     # Login and store session instance.
-    ctx.server = core.Server(host, username, password, ignore_cert_warnings=k)
+    ctx.server = core.Server(server, username, password, ignore_cert_warnings=k)
 
     atexit.register(ctx.server.cleanup)
 

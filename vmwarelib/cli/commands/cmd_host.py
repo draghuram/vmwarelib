@@ -62,6 +62,11 @@ def create_nas_datastore(ctx, name, nashost, share, amode, dstype):
 def delete_datastore(ctx, name):
     ctx.host.remove_datastore(name)
 
+@cli.command()
+@util.pass_context
+def list_logs(ctx):
+    for log in ctx.host.list_logs():
+        print(log.fileName)
 
 
 

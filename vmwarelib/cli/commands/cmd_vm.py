@@ -12,16 +12,18 @@ from vmwarelib.sdk import core
 @util.pass_context
 @click.option('--ip', help="VM's IP.")
 @click.option('--ipath', help="VM's Inventory path.")
-def cli(ctx, ip, ipath, **kwargs):
+@click.option('--uuid', help="VM's instance UUID.")
+def cli(ctx, ip, ipath, uuid, **kwargs):
     """VM commands.
     """
 
-    if not ip and not ipath:
-        raise Exception('IP or Inventory path of the VM is required. ')
+    if not ip and not ipath and not uuid:
+        raise Exception('IP, UUID, or Inventory path of the VM is required. ')
 
     ctx.ip = ip
     ctx.ipath = ipath
-    ctx.vm = core.VirtualMachine(ctx.server, {"ip": ctx.ip, "ipath": ipath})
+    ctx.uuid = uuid
+    ctx.vm = core.VirtualMachine(ctx.server, {"ip": ctx.ip, "ipath": ipath, "uuid": uuid})
 
 @cli.command()
 @util.pass_context

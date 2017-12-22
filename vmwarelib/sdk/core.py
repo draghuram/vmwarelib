@@ -175,6 +175,8 @@ class VmwareHost:
         if not self.hostobj:
             raise Exception("Could not find host with IP: ({})".format(identity["ip"]))
 
+        self.diagmgr = server.service_instance.content.diagnosticManager
+
         self.name = self.hostobj.name
         self.moref = self.hostobj._moId
 
@@ -207,6 +209,9 @@ class VmwareHost:
                                                 accessMode=amodemap[amode], type=fsmap[dstype])
         return self.hostobj.configManager.datastoreSystem.CreateNasDatastore(spec)
 
+    def list_logs(self):
+        return self.diagmgr.QueryDescriptions()
+
 class VirtualMachine:
     def __init__(self, server, identity: Dict):
         self.server = server
@@ -221,6 +226,11 @@ class VirtualMachine:
                 raise Exception("Could not find virtual machine with inventory path: ({})".format(identity["ipath"]))
 
             assert isinstance(self.vmobj, vim.VirtualMachine)
+        elif identity.get("uuid", None):
+            uuid = identity["uuid"]
+            self.vmobj = server.service_instance.content.searchIndex.FindByUuid(None, uuid, True)
+            if not self.vmobj:
+                raise Exception("Could not find virtual machine with UUID: ({})".format(uuid))
         else:
             raise Exception("Could not find virtual machine, ip or inventory path is not provided.")
 
