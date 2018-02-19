@@ -42,7 +42,7 @@ command line options or can be provided once using environment
 variables:
 ::
 
-    $ export VMWARECLI_HOST=1.2.3.4
+    $ export VMWARECLI_SERVER=1.2.3.4
     $ export VMWARECLI_USERNAME=testuser
     $ export VMWARECLI_PASSWORD=testpass
 
