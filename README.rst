@@ -84,5 +84,13 @@ To delete a datastore::
 
     $ vmwarecli host --ip <HOST_IP> delete_datastore <DSNAME>
 
+To list all VMs and their inventory paths::
+
+    $ vmwarecli server list_vms
+
+To list only VMs containing a pattern in their name::
+
+    $ vmwarecli server list_vms --path test
+
 There are various other commands available with the library and they
 will be documented later.
