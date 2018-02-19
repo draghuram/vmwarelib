@@ -31,6 +31,20 @@ class Server:
         logging.debug("Cleaning up connection to vSphere server {}...".format(self.host))
         vim_connect.Disconnect(self.service_instance)
 
+    def list_vms(self, pat):
+        content = self.service_instance.RetrieveContent()
+
+        container = content.rootFolder
+        viewType = [vim.VirtualMachine]
+        recursive = True
+        containerView = content.viewManager.CreateContainerView(container, viewType, recursive)
+
+        children = containerView.view
+        for vm in children:
+            vm_name = vm.summary.config.name
+            if not pat or vm_name.lower().find(pat.lower()) != -1:
+                yield VirtualMachine(self, vmobj=vm)
+
 def get_root_backing(backing):
     assert backing is not None
 
@@ -213,28 +227,41 @@ class VmwareHost:
         return self.diagmgr.QueryDescriptions()
 
 class VirtualMachine:
-    def __init__(self, server, identity: Dict):
-        self.server = server
+    def _find_vmobj(self, server, identity: Dict):
+        if not identity:
+            raise Exception('IP, UUID, or Inventory path of the VM is required. ')
+
+        vmobj = None
 
         if identity.get("ip", None):
-            self.vmobj = server.service_instance.content.searchIndex.FindByIp(None, identity["ip"], True)
-            if not self.vmobj:
+            vmobj = server.service_instance.content.searchIndex.FindByIp(None, identity["ip"], True)
+            if not vmobj:
                 raise Exception("Could not find virtual machine with IP: ({})".format(identity["ip"]))
         elif identity.get("ipath", None):
-            self.vmobj = server.service_instance.content.searchIndex.FindByInventoryPath(identity["ipath"])
-            if not self.vmobj:
+            vmobj = server.service_instance.content.searchIndex.FindByInventoryPath(identity["ipath"])
+            if not vmobj:
                 raise Exception("Could not find virtual machine with inventory path: ({})".format(identity["ipath"]))
 
-            assert isinstance(self.vmobj, vim.VirtualMachine)
+            assert isinstance(vmobj, vim.VirtualMachine)
         elif identity.get("uuid", None):
             uuid = identity["uuid"]
-            self.vmobj = server.service_instance.content.searchIndex.FindByUuid(None, uuid, True)
-            if not self.vmobj:
+            vmobj = server.service_instance.content.searchIndex.FindByUuid(None, uuid, True)
+            if not vmobj:
                 raise Exception("Could not find virtual machine with UUID: ({})".format(uuid))
         else:
             raise Exception("Could not find virtual machine, ip or inventory path is not provided.")
 
+        return vmobj
+
+    def __init__(self, server, identity: Dict=None, vmobj=None):
+        self.server = server
+        self.vmobj = vmobj
+
+        if vmobj is None:
+            self.vmobj = self._find_vmobj(server, identity)
+
         self.config = self.vmobj.config
+        self.name = self.config.name
         self.runtime = self.vmobj.runtime
         self.summary = self.vmobj.summary
         self.summary_config = self.summary.config
