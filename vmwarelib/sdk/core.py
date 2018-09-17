@@ -2,7 +2,7 @@
 import collections
 import logging
 import re
-from typing import Dict, Tuple, List
+#from typing import Dict, Tuple, List
 import urllib3
 
 from pyVim import connect as vim_connect
@@ -182,7 +182,7 @@ fsmap = {
 }
 
 class VmwareHost:
-    def __init__(self, server, identity: Dict):
+    def __init__(self, server, identity):
         self.server = server
 
         self.hostobj = server.service_instance.content.searchIndex.FindByIp(None, identity["ip"], False)
@@ -227,7 +227,7 @@ class VmwareHost:
         return self.diagmgr.QueryDescriptions()
 
 class VirtualMachine:
-    def _find_vmobj(self, server, identity: Dict):
+    def _find_vmobj(self, server, identity):
         if not identity:
             raise Exception('IP, UUID, or Inventory path of the VM is required. ')
 
@@ -253,7 +253,7 @@ class VirtualMachine:
 
         return vmobj
 
-    def __init__(self, server, identity: Dict=None, vmobj=None):
+    def __init__(self, server, identity=None, vmobj=None):
         self.server = server
         self.vmobj = vmobj
 
