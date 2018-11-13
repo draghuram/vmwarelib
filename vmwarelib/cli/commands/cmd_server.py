@@ -25,6 +25,30 @@ def list_vms(ctx, pat):
     for vm in ctx.server.list_vms(pat):
         print("{:>40}: {:<}".format(vm.name, vm.inventory_path))
 
+@cli.command()
+@util.pass_context
+@click.option('--vmname', help="Name of vm to be created.")
+@click.option('--datastore', help="Name of datastore under which you want to create the vm.")
+@click.option('--datacenter', help="Name of datacenter.")
+@click.option('--host', help="Name of host.")
+@click.option('--memory', default='128', help="Memory in MB's to allocate for vm.")
+@click.option('--cpus', default='2', help="Number of cpu's for the vm.")
+def create_dummy_vm(ctx, vmname, datastore, datacenter, host, memory, cpus):
+    ctx.server.create_dummy_vm(vmname, datastore, datacenter, host, memory, cpus)
+    print("VM created successfully!")
+
+@cli.command()
+@util.pass_context
+@click.option('--uuid', help="VM's instance UUID.")
+@click.option('--ip', help="VM's IP.(Optional)")
+@click.option('--ipath', help="VM's Inventory path.(Optional)")
+def delete_vm(ctx, ip, ipath, uuid):
+    identity = {"ip": ip, "ipath": ipath, "uuid": uuid}
+    ctx.server.delete_vm(identity)
+    print("VM deleted successfully!")
+
+
+
 
 
 

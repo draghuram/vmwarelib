@@ -221,3 +221,45 @@ def resize_disk(service_instance, vmobj, diskobj, size_gb):
     spec.deviceChange = [disk_spec]
     task = vmobj.ReconfigVM_Task(spec=spec)
     wait_for_tasks(service_instance, [task])
+
+
+def add_scsi_controller(service_instance, vm):
+    task = vm.ReconfigVM_Task(
+        spec=vim.vm.ConfigSpec(
+            deviceChange=[
+                vim.vm.device.VirtualDeviceSpec(
+                    operation=vim.vm.device.VirtualDeviceSpec.Operation.add,
+                    device=vim.vm.device.VirtualLsiLogicSASController(
+                        sharedBus=vim.vm.device.VirtualSCSIController.Sharing.noSharing
+                    ),
+                )
+            ]
+        )
+    )
+    wait_for_tasks(service_instance, [task])
+
+def find_vmobj(service_instance, identity):
+    if not identity:
+        raise Exception('IP, UUID, or Inventory path of the VM is required. ')
+
+    vmobj = None
+
+    if identity.get("ip", None):
+        vmobj = service_instance.content.searchIndex.FindByIp(None, identity["ip"], True)
+        if not vmobj:
+            raise Exception("Could not find virtual machine with IP: ({})".format(identity["ip"]))
+    elif identity.get("ipath", None):
+        vmobj = service_instance.content.searchIndex.FindByInventoryPath(identity["ipath"])
+        if not vmobj:
+            raise Exception("Could not find virtual machine with inventory path: ({})".format(identity["ipath"]))
+
+        assert isinstance(vmobj, vim.VirtualMachine)
+    elif identity.get("uuid", None):
+        uuid = identity["uuid"]
+        vmobj = service_instance.content.searchIndex.FindByUuid(None, uuid, True)
+        if not vmobj:
+            raise Exception("Could not find virtual machine with UUID: ({})".format(uuid))
+    else:
+        raise Exception("Could not find virtual machine, ip or inventory path is not provided.")
+
+    return vmobj

@@ -4,6 +4,7 @@ import logging
 import re
 #from typing import Dict, Tuple, List
 import urllib3
+import datetime
 
 from pyVim import connect as vim_connect
 from pyVmomi import vim
@@ -44,6 +45,58 @@ class Server:
             vm_name = vm.summary.config.name
             if not pat or vm_name.lower().find(pat.lower()) != -1:
                 yield VirtualMachine(self, vmobj=vm)
+
+    def create_dummy_vm(self, vmname, datastore, datacentername, hostname, memory, cpus):
+        content = self.service_instance.RetrieveContent()
+        datacenters = content.rootFolder.childEntity
+        datacenter = None
+
+        for d in datacenters:
+            if d.name == datacentername:
+                datacenter = d
+
+        if datacenter == None:
+            raise Exception('Datacenter {} not found.'.format(datacentername))
+
+        vmfolder = datacenter.vmFolder
+
+        resource_pool = None
+        hosts = datacenter.hostFolder.childEntity
+
+        for host in hosts:
+            if host.name == hostname:
+                resource_pool = host.resourcePool
+
+        if resource_pool == None:
+            raise Exception('Host {} not found.'.format(hostname))
+
+        datastore_path = '[' + datastore + ']' + vmname
+        vmx_file = vim.vm.FileInfo(logDirectory=None,
+                                       snapshotDirectory= None,
+                                       suspendDirectory=None,
+                                       vmPathName=datastore_path)
+
+        config = vim.vm.ConfigSpec(name=vmname, memoryMB=int(memory), numCPUs=int(cpus), files=vmx_file, guestId='dosGuest', version='vmx-07')
+
+        task = vmfolder.CreateVM_Task(config=config, pool=resource_pool)
+
+        result = util.wait_for_tasks(self.service_instance, [task])
+
+        vmresult = result[task.info.key].info.result
+        uuid = result[task.info.key].info.result.config.uuid
+
+        util.add_scsi_controller(self.service_instance, vmresult)
+
+        vm_obj = VirtualMachine(self, vmobj=vmresult)
+        vm_obj.add_disk(size_gb=2)
+
+        return vm_obj
+
+    def delete_vm(self, identity):
+
+        vm = util.find_vmobj(service_instance=self.service_instance, identity=identity)
+        task = vm.Destroy_Task()
+        util.wait_for_tasks(self.service_instance, [task])
 
 def get_root_backing(backing):
     assert backing is not None
@@ -411,6 +464,7 @@ class VirtualMachine:
         task = self.parent_folder.RegisterVM_Task(path=vmxpath, name=name, asTemplate=False,
                                                   pool=self.vmobj.resourcePool)
         util.wait_for_tasks(self.server.service_instance, [task])
+
 
     def unregister(self):
         self.vmobj.UnregisterVM()
