@@ -47,6 +47,19 @@ def delete_vm(ctx, ip, ipath, uuid):
     ctx.server.delete_vm(identity)
     print("VM deleted successfully!")
 
+@cli.command()
+@util.pass_context
+@click.option('--vmname', help="Name of vm to be created.")
+@click.option('--template', help="Name of the template you want to clone.")
+@click.option('--datastore', help="Name of datastore under which you want to create the vm.")
+@click.option('--datacenter', help="Name of datacenter.")
+@click.option('--hostname', help="Name of host/cluster.")
+def create_vm_from_template(ctx, vmname, template, datastore, datacenter, hostname):
+    ctx.server.create_vm_from_template(vmname, template, datastore, datacenter, hostname)
+    print("VM create successfully form template!")
+
+
+
 
 
 

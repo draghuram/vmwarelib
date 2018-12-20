@@ -238,6 +238,7 @@ def add_scsi_controller(service_instance, vm):
     )
     wait_for_tasks(service_instance, [task])
 
+# The identity is a dictonary with keys IP, UUID and Inventory Path any one of them is enough.s
 def find_vmobj(service_instance, identity):
     if not identity:
         raise Exception('IP, UUID, or Inventory path of the VM is required. ')

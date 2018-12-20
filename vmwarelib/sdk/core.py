@@ -10,6 +10,7 @@ from pyVim import connect as vim_connect
 from pyVmomi import vim
 
 import requests
+import time
 
 from vmwarelib.sdk import util
 
@@ -97,6 +98,106 @@ class Server:
         vm = util.find_vmobj(service_instance=self.service_instance, identity=identity)
         task = vm.Destroy_Task()
         util.wait_for_tasks(self.service_instance, [task])
+
+    def get_obj(self, content, vimtype, name):
+        """
+        Return an object by name, if name is None the
+        first found object is returned
+        """
+        obj = None
+        container = content.viewManager.CreateContainerView(
+            content.rootFolder, vimtype, True)
+        for c in container.view:
+            if name:
+                if c.name == name:
+                    obj = c
+                    break
+            else:
+                obj = c
+                break
+
+        return obj
+
+    def create_vm_from_template(self, vmname, template_name, datastore_name, datacenter_name, hostname):
+
+        content = self.service_instance.RetrieveContent()
+        template = None
+        datastore = None
+        template = self.get_obj(content, [vim.VirtualMachine], template_name)
+
+        if template:
+            datacenters = content.rootFolder.childEntity
+            datacenter = None
+            datastore = None
+
+            for d in datacenters:
+                if d.name == datacenter_name:
+                    datacenter = d
+                    datastores_object_view = content.viewManager.CreateContainerView(datacenter, [vim.Datastore], True)
+
+                    for ds in datastores_object_view.view:
+                        if ds.info.name == datastore_name:
+                            datastore = ds
+                    datastores_object_view.Destroy()
+
+            print(datacenter.name)
+            print(datastore.name)
+
+
+
+            # if None, get the first one
+
+            resource_pool = None
+            hosts = datacenter.hostFolder.childEntity
+
+            for host in hosts:
+                if host.name == hostname:
+                    resource_pool = host.resourcePool
+
+            if resource_pool == None:
+                raise Exception('Host {} not found.')
+
+            vmconf = vim.vm.ConfigSpec()
+
+            # set relospec
+            relospec = vim.vm.RelocateSpec()
+            relospec.datastore = datastore
+            relospec.pool = resource_pool
+
+            clonespec = vim.vm.CloneSpec()
+            clonespec.location = relospec
+            clonespec.powerOn = True
+
+            vmfolder = datacenter.vmFolder
+
+            print("cloning VM...")
+            task = template.Clone(folder=vmfolder, name=vmname, spec=clonespec)
+            result = util.wait_for_tasks(self.service_instance, [task])
+
+            vmresult = result[task.info.key].info.result
+            uuid = result[task.info.key].info.result.config.uuid
+            print(uuid)
+
+            # wait for OS to come up and get guestOS IP.
+            count = 0
+            ip = None
+            while (not ip):
+                try:
+                    data = VirtualMachine(self, identity={'uuid': uuid}).info()
+                    ip = data['ip']
+
+                    time.sleep(30)
+                    count += 1
+                    if count > 10:
+                        break
+                except:
+                    pass
+        else:
+            print("Template not found!")
+
+        print(ip)
+        return ip
+
 
 def get_root_backing(backing):
     assert backing is not None
