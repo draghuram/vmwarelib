@@ -196,7 +196,7 @@ class Server:
             print("Template not found!")
 
         print(ip)
-        return ip
+        return ip,uuid
 
 
 def get_root_backing(backing):
